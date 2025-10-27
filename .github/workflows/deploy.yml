@@ -14,18 +14,43 @@ jobs:
       uses: appleboy/ssh-action@v0.1.5
       with:
         host: 94.250.251.17
-        username: root
+        username: root  # ← Это правильный SSH логин
         password: k.5002*s
+        port: 22
+        timeout: 30s
         script: |
-          cd /home/ubuntu
-          git clone https://github.com/devilnevercry2212/telegram-bot-vds.git
-          cd telegram-bot-vds
-          apt update
-          apt install python3 python3-pip python3-venv -y
+          # Обновляем систему
+          apt update -y
+          
+          # Устанавливаем необходимые пакеты
+          apt install -y python3 python3-pip python3-venv git
+          
+          # Создаем директорию для бота
+          mkdir -p /home/ubuntu/telegram-bot
+          cd /home/ubuntu/telegram-bot
+          
+          # Клонируем репозиторий
+          if [ -d "telegram-bot-vds" ]; then
+            cd telegram-bot-vds
+            git pull origin main
+          else
+            git clone https://github.com/devilnevercry2212/telegram-bot-vds.git
+            cd telegram-bot-vds
+          fi
+          
+          # Создаем виртуальное окружение
           python3 -m venv venv
           source venv/bin/activate
+          
+          # Устанавливаем зависимости
           pip install -r requirements.txt
+          
+          # Настраиваем переменные окружения
           cp .env.example .env
-          echo "TOKEN=8467184939:AAGsFjLQAHcMTfKsTAnbPTBC0YSlaQkGxpg" >> .env
+          echo "TOKEN=8467184939:AAGsFjLQAHcMTfKsTAnbPTBC0YSlaQkGxpg" > .env
           echo "CHAT_ID=-1003052947504" >> .env
-          python3 bot.py
+          
+          # Запускаем бота в фоне
+          nohup python3 bot.py > bot.log 2>&1 &
+          
+          echo "Bot deployed successfully!"
